@@ -2,6 +2,16 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
+def _normalize_postgres_url(url: str) -> str:
+    if url.startswith("postgresql+psycopg2://"):
+        return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql+psycopg://"):
+        return url.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 class Settings(BaseSettings):
     DATABASE_URL: str
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -108,6 +118,11 @@ class Settings(BaseSettings):
         "pt-PT",
         "zh-CN",
     ]
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        return _normalize_postgres_url(value)
 
     @field_validator(
         "DEFAULT_CONVERSATION_WEEKLY_SESSIONS",
