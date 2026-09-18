@@ -144,7 +144,7 @@ disable this behavior.
 - The backend proxies all LLM, TTS, and STT calls so the frontend never talks directly to providers.
 - The `LLM_PROVIDER` field controls the LLM provider: `ollama` (local, recommended), `openai`, `anthropic`, or `deepseek`.
 - Anthropic's output budget is configurable with `ANTHROPIC_MAX_TOKENS` (default: `8192`) and must stay within the selected model's supported output limit.
-- `TTS_PROVIDER` and `STT_PROVIDER` are independent: `local` (Kokoro / faster-whisper) or `openai` (OpenAI API).
+- `TTS_PROVIDER` and `STT_PROVIDER` are independent: TTS supports `gemini`, `local`, and `openai`; STT supports `faster_whisper_remote`, `local`, and `openai`.
 - Conversation, token, freemium, and trial limits are configurable in `.env.example`. In general
   quota defaults, `0` means unlimited; in freemium feature quotas, `0` blocks that feature.
 - Supported study languages include English (`en-GB`, `en-US`), Spanish (`es-ES`), Italian (`it-IT`), Portuguese (`pt-PT`), German (`de-DE`), French (`fr-FR`), Japanese (`ja-JP`), Korean (`ko-KR`), and Mainland Chinese (`zh-CN`). The study language is chosen on `/onboarding` and can be expanded later from Settings → My Languages. The user's native language is asked during registration and is used for flashcard translations, tutor feedback, lesson native explanations, and cached native-language help in static grammar, phrasebook, and vocabulary resources.
@@ -176,8 +176,15 @@ TTS and STT are required services. Each supports two providers selected independ
 
 ### Provider options
 
-- `TTS_PROVIDER=local` uses Kokoro-FastAPI; `TTS_PROVIDER=openai` uses OpenAI TTS.
-- `STT_PROVIDER=local` uses faster-whisper; `STT_PROVIDER=openai` uses OpenAI Whisper.
+- `TTS_PROVIDER=gemini` uses Gemini native audio generation; `TTS_PROVIDER=local` uses Kokoro-FastAPI; `TTS_PROVIDER=openai` uses OpenAI TTS.
+- `STT_PROVIDER=faster_whisper_remote` uses the standalone Render faster-whisper service; `STT_PROVIDER=local` uses the legacy local Whisper service; `STT_PROVIDER=openai` uses OpenAI Whisper.
+
+Production remote STT configuration:
+
+```env
+STT_PROVIDER=faster_whisper_remote
+STT_BASE_URL=https://freelingo-stt.onrender.com
+```
 - `OPENAI_API_KEY` is required when either service uses OpenAI.
 
 The default local services in `docker-compose.yml` are configured for NVIDIA GPUs:
@@ -197,6 +204,15 @@ OpenAI providers require no local GPU or speech containers:
 TTS_PROVIDER=openai
 STT_PROVIDER=openai
 OPENAI_API_KEY=sk-...
+```
+
+Gemini TTS uses the existing `GEMINI_API_KEY`. Gemini returns PCM audio, which
+the backend converts to MP3 before returning it to the existing frontend:
+
+```env
+TTS_PROVIDER=gemini
+TTS_MODEL=gemini-2.5-flash-preview-tts
+TTS_VOICE=Kore
 ```
 
 The services reuse `OPENAI_API_KEY` when OpenAI is also the LLM provider. See `.env.example` for

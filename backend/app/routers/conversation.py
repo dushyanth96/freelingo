@@ -220,6 +220,8 @@ async def conversation_ws(
             )
             if voice_pref not in _VALID_VOICES:
                 voice_pref = ""
+        elif settings.TTS_PROVIDER == "gemini":
+            voice_pref = voice_pref or settings.TTS_VOICE
         else:
             voice_pref = ""  # local TTS ignores voice param
         payload = decode_access_token(token)

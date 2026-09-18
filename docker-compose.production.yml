@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: freelingo-backend
+    restart: unless-stopped
+    command: >
+      sh -c "cd /tmp && PYTHONPATH=/app alembic -c /app/alembic.ini upgrade head && cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+      APP_BASE_URL: ${APP_BASE_URL:?APP_BASE_URL is required}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      EMAIL_ENABLED: "false"
+      STRIPE_ENABLED: "false"
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      TTS_PROVIDER: ${TTS_PROVIDER:-gemini}
+      TTS_MODEL: ${TTS_MODEL:-gemini-2.5-flash-preview-tts}
+      TTS_VOICE: ${TTS_VOICE:-Kore}
+      TTS_PRIMARY_MODEL: ${TTS_PRIMARY_MODEL:-gemini-2.5-flash-preview-tts}
+      TTS_FALLBACK_MODEL: ${TTS_FALLBACK_MODEL:-}
+      TTS_MONTHLY_CHARACTER_LIMIT: ${TTS_MONTHLY_CHARACTER_LIMIT:-1000000}
+      TTS_SWITCH_THRESHOLD: ${TTS_SWITCH_THRESHOLD:-0.90}
+      STT_PROVIDER: ${STT_PROVIDER:-faster_whisper_remote}
+      STT_BASE_URL: ${STT_BASE_URL:?STT_BASE_URL must be the Render faster-whisper HTTPS URL}
+      STT_MODEL: ${STT_MODEL:-tiny}
+      WHISPER_MODEL: ${WHISPER_MODEL:-tiny}
+      DEVICE: ${DEVICE:-cpu}
+      COMPUTE_TYPE: ${COMPUTE_TYPE:-int8}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UVICORN_WORKERS: 1
+      RATE_LIMIT_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "127.0.0.1:8000:8000"

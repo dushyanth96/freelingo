@@ -51,8 +51,12 @@ from app.routers import (
 )
 from app.routers import config as config_router
 from app.routers import health as health_router
-from app.services.stt_service import OpenAISTTService, WhisperSTTService
-from app.services.tts_service import KokoroTTSService, OpenAITTSService
+from app.services.stt_service import (
+    OpenAISTTService,
+    RemoteFasterWhisperProvider,
+    WhisperSTTService,
+)
+from app.services.tts_service import GeminiTTSService, KokoroTTSService, OpenAITTSService
 
 
 def _run_migrations() -> None:
@@ -88,6 +92,14 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
             voice=settings.OPENAI_TTS_VOICE,
             speed=settings.OPENAI_TTS_SPEED,
         )
+    elif settings.TTS_PROVIDER == "gemini":
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("TTS_PROVIDER=gemini requires GEMINI_API_KEY to be set")
+        app.state.tts_service = GeminiTTSService(
+            api_key=settings.GEMINI_API_KEY,
+            model=settings.TTS_MODEL,
+            voice=settings.TTS_VOICE,
+        )
     else:
         app.state.tts_service = KokoroTTSService(settings.TTS_BASE_URL, settings.TTS_VOICE)
 
@@ -98,6 +110,8 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
             api_key=settings.OPENAI_API_KEY,
             model=settings.OPENAI_STT_MODEL,
         )
+    elif settings.STT_PROVIDER == "faster_whisper_remote":
+        app.state.stt_service = RemoteFasterWhisperProvider(settings.STT_BASE_URL)
     else:
         app.state.stt_service = WhisperSTTService(settings.STT_BASE_URL)
 

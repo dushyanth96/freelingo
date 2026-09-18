@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+/.google-service-account.json
 
 # IDE
 .idea/

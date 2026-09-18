@@ -11,7 +11,9 @@ class Settings(BaseSettings):
     ALLOW_REGISTRATION: bool = True
     FIRST_USER_IS_ADMIN: bool = True
     BLOCKED_EMAIL_DOMAINS: list[str] = []
-    LLM_PROVIDER: str = "ollama"
+    LLM_PROVIDER: str = "gemini"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
     OLLAMA_MODEL: str = "gemma4:e4b"
     OPENAI_API_KEY: str = ""
@@ -21,14 +23,23 @@ class Settings(BaseSettings):
     ANTHROPIC_MAX_TOKENS: int = 8192
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_MODEL: str = "deepseek-chat"
-    TTS_PROVIDER: str = "local"  # local | openai
+    TTS_PROVIDER: str = "gemini"  # gemini | openai | local
+    TTS_MODEL: str = "gemini-2.5-flash-preview-tts"
     TTS_BASE_URL: str = "http://kokoro:8880"
-    TTS_VOICE: str = "af_heart"
+    TTS_VOICE: str = "Kore"
+    TTS_PRIMARY_MODEL: str = "gemini-2.5-flash-preview-tts"
+    TTS_FALLBACK_MODEL: str = ""
+    TTS_MONTHLY_CHARACTER_LIMIT: int = 1_000_000
+    TTS_SWITCH_THRESHOLD: float = 0.90
     OPENAI_TTS_MODEL: str = "tts-1"
     OPENAI_TTS_VOICE: str = "nova"
     OPENAI_TTS_SPEED: float = 1.0
-    STT_PROVIDER: str = "local"  # local | openai
-    STT_BASE_URL: str = "http://whisper:9000"
+    STT_PROVIDER: str = "faster_whisper_remote"  # local | openai | faster_whisper_remote
+    STT_BASE_URL: str = "http://stt:8001"
+    STT_MODEL: str = "tiny"
+    WHISPER_MODEL: str = "tiny"
+    DEVICE: str = "cpu"
+    COMPUTE_TYPE: str = "int8"
     OPENAI_STT_MODEL: str = "whisper-1"
     RATE_LIMIT_ENABLED: bool = True
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
@@ -147,7 +158,7 @@ class Settings(BaseSettings):
             raise ValueError("ASSESSMENT_VOICE_TRIAL_DURATION_SECONDS must not exceed 1800")
         return value
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 settings = Settings()

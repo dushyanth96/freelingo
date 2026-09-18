@@ -33,7 +33,7 @@ async def text_to_speech(
     body: TTSRequest,
     current_user: User = Depends(get_current_user),
 ) -> Response:
-    """Proxy TTS request to Kokoro service. Returns audio/mpeg."""
+    """Proxy TTS request to the configured provider. Returns audio/mpeg."""
     t0 = time.perf_counter()
     trace_id = request.headers.get("X-TTS-Trace-ID") or f"tts-{uuid.uuid4().hex[:12]}"
 
@@ -45,9 +45,8 @@ async def text_to_speech(
         )
 
     synth_t0 = time.perf_counter()
-    # For local Kokoro TTS, ignore the client voice param — only OpenAI voices
-    # should be forwarded. Prevents 400 errors when user switches from OpenAI
-    # to local and stale OpenAI voice names (e.g. "nova") remain in localStorage.
+    # Local Kokoro ignores client voice preferences; cloud providers receive the
+    # configured voice so the frontend remains provider-agnostic.
     voice = body.voice if settings.TTS_PROVIDER != "local" else None
     audio = await tts_service.synthesize(body.text, voice)
     synth_ms = (time.perf_counter() - synth_t0) * 1000

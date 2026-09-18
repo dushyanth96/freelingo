@@ -529,24 +529,32 @@ class LLMAdapter:
                 api_key="ollama",
             )
             self.model = settings.OLLAMA_MODEL
+        elif self.provider == "gemini":
+            self.client = AsyncOpenAI(
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai",
+                api_key=settings.GEMINI_API_KEY or "gemini-placeholder-key",
+            )
+            self.model = settings.GEMINI_MODEL
         elif self.provider == "openai":
-            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY or "openai-placeholder-key")
             self.model = settings.OPENAI_MODEL
         elif self.provider == "deepseek":
             self.client = AsyncOpenAI(
                 base_url="https://api.deepseek.com/v1",
-                api_key=settings.DEEPSEEK_API_KEY,
+                api_key=settings.DEEPSEEK_API_KEY or "deepseek-placeholder-key",
             )
             self.model = settings.DEEPSEEK_MODEL
         elif self.provider == "anthropic":
             self._anthropic = _anthropic.AsyncAnthropic(
-                api_key=settings.ANTHROPIC_API_KEY,
+                api_key=settings.ANTHROPIC_API_KEY or "anthropic-placeholder-key",
                 # Retries are handled by _call_with_retry; disable the SDK's
                 # built-in retry logic to avoid exponential back-off stacking.
                 max_retries=0,
             )
             self.client = None
             self.model = settings.ANTHROPIC_MODEL
+        else:
+            raise ValueError(f"Unsupported LLM_PROVIDER: {self.provider}")
 
     async def _call_with_retry(self, fn, *args, tools_requested: bool = False, **kwargs):
         last_error = None
