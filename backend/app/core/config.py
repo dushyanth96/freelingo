@@ -1,15 +1,31 @@
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
-def _normalize_postgres_url(url: str) -> str:
-    if url.startswith("postgresql+psycopg2://"):
-        return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
-    if url.startswith("postgresql+psycopg://"):
-        return url.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
-    if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
+def _normalize_postgres_url(url: str) -> tuple[str, dict[str, str]]:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {
+        "postgresql",
+        "postgresql+asyncpg",
+        "postgresql+psycopg2",
+        "postgresql+psycopg",
+    }:
+        return url, {}
+
+    params = parse_qsl(parsed.query, keep_blank_values=True)
+    filtered = [
+        (key, value) for key, value in params if key.lower() not in {"sslmode", "channel_binding"}
+    ]
+    ssl_required = any(
+        key.lower() == "sslmode" and value.lower() in {"require", "verify-ca", "verify-full"}
+        for key, value in params
+    )
+    connect_args: dict[str, str] = {"ssl": "require"} if ssl_required else {}
+    normalized_query = urlencode(filtered, doseq=True)
+    normalized = urlunsplit(parsed._replace(scheme="postgresql+asyncpg", query=normalized_query))
+    return normalized, connect_args
 
 
 class Settings(BaseSettings):
@@ -122,7 +138,8 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL")
     @classmethod
     def normalize_database_url(cls, value: str) -> str:
-        return _normalize_postgres_url(value)
+        normalized, _ = _normalize_postgres_url(value)
+        return normalized
 
     @field_validator(
         "DEFAULT_CONVERSATION_WEEKLY_SESSIONS",
